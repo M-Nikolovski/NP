@@ -6,15 +6,12 @@ import java.util.Random;
 import java.util.Scanner;
 
 
+final class IntegerArray {
 
-public final class IntegerArray {
     int [] array;
 
-    public IntegerArray(int[] array) {
-        this.array = new int[array.length];
-        for (int i = 0; i < array.length; i++) {
-            this.array[i] = array[i];
-        }
+    public IntegerArray(int [] array) {
+        this.array = array.clone();
     }
 
     public int length() { return array.length; }
@@ -51,12 +48,22 @@ public final class IntegerArray {
         return new IntegerArray(tempArray);
     }
 
+    public boolean equals(IntegerArray ia) {
+        if (array.length != ia.length())
+            return false;
+        for (int i = 0; i < array.length; i++) {
+            if (this.array[i] != ia.getElementAt(i))
+                return false;
+        }
+        return true;
+    }
+
     public IntegerArray concat(IntegerArray ia) {
         int newArrayLength = array.length + ia.length();
         int [] newArray = new int[newArrayLength];
         for (int i = 0; i < newArrayLength; i++) {
-            if (i > array.length) {
-                newArray[i] = ia.getElementAt(i);
+            if (i >= array.length) {
+                newArray[i] = ia.getElementAt(i - array.length);
                 continue;
             }
             newArray[i] = array[i];
@@ -69,7 +76,6 @@ public final class IntegerArray {
         for (int i = 0; i < array.length; i++) {
             if (i == 0) {
                 stringifiedArray = stringifiedArray.concat("[");
-                continue;
             }
             if (i == array.length - 1) {
                 stringifiedArray = stringifiedArray.concat(array[i] + "]");
@@ -79,12 +85,26 @@ public final class IntegerArray {
         }
         return stringifiedArray;
     }
+}
 
+
+class ArrayReader {
+
+    public static IntegerArray readIntegerArray(InputStream input) {
+        Scanner inputStream = new Scanner(input);
+        int length = inputStream.nextInt();
+        int [] numbersArray = new int[length];
+        for (int i = 0; i < length; i++) {
+            numbersArray[i] = inputStream.nextInt();
+        }
+        IntegerArray array = new IntegerArray(numbersArray);
+        return array;
+    }
 }
 
 
 
-public class IntegerArrayTester {
+class IntegerArrayTester {
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -195,4 +215,5 @@ public class IntegerArrayTester {
         }
         return a;
     }
+
 }
