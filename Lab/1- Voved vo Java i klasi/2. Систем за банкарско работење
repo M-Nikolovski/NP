@@ -157,6 +157,14 @@ public class BankTester {
 }
 
 
+
+class Money {
+    public static double toDouble(String amount) {
+        return Double.parseDouble(amount.replace("$",""));
+    }
+}
+
+
 class Account {
 
     private String name;
@@ -177,11 +185,16 @@ class Account {
 
     public String getBalance() { return balance; }
 
+//    public double getDoubleBalance() {
+//        return Double.parseDouble(balance.replace("$", ""));
+//    }
+//
     public void setBalance(String balance) { this.balance = balance; }
+
 
     @Override
     public String toString() {
-        return "Name:" + name + "\n" + "Balance:" + balance + "\n";
+        return "Name: " + name + "\n" + "Balance: " + balance + "\n";
     }
 
 }
@@ -196,9 +209,10 @@ abstract class Transaction {
 
     public Transaction() {}
 
-    public Transaction(long fromId, long toId, String amount) {
+    public Transaction(long fromId, long toId, String description, String amount) {
         this.fromId = fromId;
         this.toId = toId;
+        this.description = description;
         this.amount = amount;
     }
 
@@ -210,6 +224,10 @@ abstract class Transaction {
 
     public String getAmount() { return amount; }
 
+//    public double getDoubleAmount() {
+//        return Double.parseDouble(amount.replace("$", ""));
+//    }
+
 }
 
 
@@ -218,7 +236,7 @@ class FlatAmountProvisionTransaction extends Transaction {
     private String flatAmount;
 
     public FlatAmountProvisionTransaction(long fromId, long toId, String amount, String flatAmount) {
-        super(fromId, toId, amount);
+        super(fromId, toId, "FlatAmount", amount);
         this.flatAmount = flatAmount;
     }
 
@@ -235,7 +253,7 @@ class FlatPercentProvisionTransaction extends Transaction {
     private int centsPerDollar;
 
     public FlatPercentProvisionTransaction(long fromId, long toId, String amount, int centsPerDollar) {
-        super(fromId, toId, amount);
+        super(fromId, toId, "FlatPercent", amount);
         this.centsPerDollar = centsPerDollar;
     }
 
@@ -266,7 +284,7 @@ class Bank {
         Account accTo = null;
         for (Account account : accounts) {
             if (account.getId() == t.getFromId()) {
-                if (account.getBalance().compareTo(t.getAmount()) >= 0)
+                if (Money.toDouble(account.getBalance()) >= Money.toDouble(t.getAmount()))
                     accFrom = account;
                 else
                     return false;
@@ -276,6 +294,23 @@ class Bank {
             }
         }
         if ((accFrom != null)  && (accTo != null)) {
+            // Making the Transaction
+            double provision;
+            if (t instanceof FlatAmountProvisionTransaction) {
+                provision = Money.toDouble(((FlatAmountProvisionTransaction) t).getFlatAmount());
+            } else if (t instanceof FlatPercentProvisionTransaction){
+                provision = (Money.toDouble(t.getAmount()) * ((FlatPercentProvisionTransaction) t).getPercent() / 100);
+            } else { provision = 0; }
+
+            double accFrom_newBalance = Money.toDouble(accFrom.getBalance()) - Money.toDouble(t.getAmount()) - provision;
+            accFrom.setBalance(new String(accFrom_newBalance + "0$"));
+
+            double accTo_newBalance = Money.toDouble(accTo.getBalance()) + Money.toDouble(t.getAmount());
+            accTo.setBalance(new String(accTo_newBalance + "0$"));
+
+            totalTransfers = Money.toDouble(totalTransfers) + Money.toDouble(t.getAmount()) + "0$";
+            totalProvision = Money.toDouble(totalProvision) + provision + "0$";
+
             return true;
         }
         return false;
@@ -289,7 +324,7 @@ class Bank {
 
     @Override
     public String toString() {
-        String bankString = "Name:" + name + "\n \n";
+        String bankString = "Name: " + name + "\n\n";
         for (Account account : accounts) {
             bankString = bankString.concat(account.toString());
         }
