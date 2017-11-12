@@ -33,7 +33,6 @@ public class DoubleMatrixTester {
                         f[i] = scanner.nextDouble();
 
                     try {
-                        if(f.length < R * C) { throw new InsufficientElementsException("Insufficient number of elements"); }
                         fm = new DoubleMatrix(f, R, C);
                         info = Arrays.copyOf(f, f.length);
 
@@ -97,7 +96,6 @@ public class DoubleMatrixTester {
                 case "MAX_IN_ROW": {
                     int row = scanner.nextInt();
                     try {
-                        if ((row > fm.rows()) || (row < 0)) { throw new InvalidRowNumberException("Invalid row number"); }
                         System.out.println("Max in row: "
                                 + format.format(fm.maxElementAtRow(row)));
                     } catch (InvalidRowNumberException e) {
@@ -109,7 +107,6 @@ public class DoubleMatrixTester {
                 case "MAX_IN_COLUMN": {
                     int col = scanner.nextInt();
                     try {
-                        if ((col > fm.columns()) || (col < 0)) { throw new InvalidColumnNumberException("Invalid column number"); }
                         System.out.println("Max in column: "
                                 + format.format(fm.maxElementAtColumn(col)));
                     } catch (InvalidColumnNumberException e) {
@@ -197,68 +194,68 @@ public class DoubleMatrixTester {
 }
 
 
-
 class InsufficientElementsException extends Exception {
-    public InsufficientElementsException(String message) {
-        super(message);
+    public InsufficientElementsException() {
+        super("Insufficient number of elements");
     }
 }
 
 class InvalidRowNumberException extends Exception {
-    public InvalidRowNumberException(String message) {
-        super(message);
+    public InvalidRowNumberException() {
+        super("Invalid row number");
     }
 }
 
 class InvalidColumnNumberException extends Exception {
-    public InvalidColumnNumberException(String message) {
-        super(message);
+    public InvalidColumnNumberException() {
+        super("Invalid column number");
     }
 }
 
 
 class DoubleMatrix {
 
-    private double [][] matrix;
+    private double matrix[][];
     private int rows;
     private int columns;
 
-    public DoubleMatrix(double [] a, int m, int n) {
+    public DoubleMatrix(double a[], int m, int n) throws InsufficientElementsException {
+        if (m*n > a.length)
+            throw new InsufficientElementsException();
         rows = m;
         columns = n;
         matrix = new double[rows][columns];
-        for (int i = 0, k = a.length - m*n; i < rows; i++) {
-            for (int j = 0; j < columns; j++) {
+        int k = a.length - m*n;
+        for (int i = 0; i < m; i++)
+            for (int j = 0; j < n; j++)
                 matrix[i][j] = a[k++];
-            }
-        }
     }
 
-    public String getDimensions() {
-        return "[" + rows + " x " + columns + "]";
-    }
+    public double getElementAt(int m, int n) { return matrix[m][n]; }
 
-    public double getElementAt(int i, int j) { return matrix[i][j]; }
+    public String getDimensions() { return "[" + rows + " x " + columns + "]"; }
 
     public int rows() { return rows; }
 
     public int columns() { return columns; }
 
-    public double maxElementAtRow(int row) {
+    public double maxElementAtRow(int row) throws InvalidRowNumberException {
+        if (row < 1 || row > rows)
+            throw new InvalidRowNumberException();
         double max = matrix[row-1][0];
-        for(int i = 1; i < columns; i++) {
+        for (int i = 1; i < columns; i++)
             if (matrix[row-1][i] > max)
                 max = matrix[row-1][i];
-        }
         return max;
     }
 
-    public double maxElementAtColumn(int column) {
+    public double maxElementAtColumn(int column) throws InvalidColumnNumberException {
+        if (column < 1 || column > columns)
+            throw new InvalidColumnNumberException();
         double max = matrix[0][column-1];
-        for(int i = 1; i < rows; i++) {
+        for (int i = 1; i < rows; i++)
             if (matrix[i][column-1] > max)
                 max = matrix[i][column-1];
-        }
         return max;
     }
 
@@ -271,35 +268,25 @@ class DoubleMatrix {
     }
 
     public double[] toSortedArray() {
-        // matrix to array
-        double [] array = new double[rows*columns];
-        for (int i = 0, k = 0; i < rows; i++)
-            for (int j = 0; j < columns; j++)
-                array[k++] = matrix[i][j];
 
-        // array sorting
-        for (int i = 0; i < array.length - 1; i++) {
-            for (int j = 0; j < array.length - i - 1; j++) {
-                if (array[j] < array[j + 1]) {
-                    double temp = array[j];
-                    array[j] = array[j + 1];
-                    array[j + 1] = temp;
+        double [] sortedArray = new double[rows * columns];
+
+        // matrix to array
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < columns; j++)
+                sortedArray[i * columns + j] = matrix[i][j];
+
+        // array to sorted array
+        for (int i = 0; i < sortedArray.length - 1; i++) {
+            for (int j = 0; j < sortedArray.length - i - 1; j++) {
+                if (sortedArray[j] < sortedArray[j + 1]) {
+                    double temp = sortedArray[j];
+                    sortedArray[j] = sortedArray[j + 1];
+                    sortedArray[j + 1] = temp;
                 }
             }
         }
-        return array;
-    }
-
-    public boolean equals(DoubleMatrix dm) {
-        if ((rows != dm.rows()) || (columns != dm.columns()))
-            return false;
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < columns; j++)
-                if (matrix[i][j] != dm.getElementAt(i, j)) {
-                    System.out.println("### " + matrix[i][j] + " not equal " + dm.getElementAt(i,j));
-                    return false;
-                }
-        return true;
+        return sortedArray;
     }
 
     @Override
@@ -316,12 +303,49 @@ class DoubleMatrix {
         }
         return matrixString;
     }
+
+    @Override
+    public boolean equals(Object o) {
+
+        if (this == o)
+            return true;
+
+        if (o == null)
+            return false;
+
+        DoubleMatrix dm = (DoubleMatrix)o;
+
+        if ((rows != dm.rows()) || (columns != dm.columns()))
+            return false;
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < columns; j++)
+                if (matrix[i][j] != dm.getElementAt(i, j))
+                    return false;
+        
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+
+        final int prime = 31;
+        int result = 1;
+        
+        for (double[] red:matrix) {
+            result += prime * result + Arrays.hashCode(red);
+        }
+        
+        return result;
+
+    }
+
 }
 
 
 class MatrixReader {
 
-    public static DoubleMatrix read(InputStream input) {
+    public static DoubleMatrix read(InputStream input) throws InsufficientElementsException {
         Scanner inputStream = new Scanner(input);
         int rows = inputStream.nextInt();
         int cols = inputStream.nextInt();
