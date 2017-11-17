@@ -1,0 +1,86 @@
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class F1Test {
+
+    public static void main(String[] args) {
+        F1Race f1Race = new F1Race();
+        f1Race.readResults(System.in);
+        f1Race.printSorted(System.out);
+    }
+
+}
+
+class F1Race {
+
+    ArrayList<String> data;
+
+    public F1Race() {
+        data = new ArrayList<>();
+    }
+
+    void readResults(InputStream inputStream) {
+        Scanner keyboard = new Scanner(inputStream);
+        while (keyboard.hasNext()) {
+            data.add(keyboard.nextLine());
+        }
+    }
+
+    void printSorted(OutputStream outputStream) {
+
+        ArrayList<String> sortedData = new ArrayList<>();
+
+        for (String line : data) {
+
+            String [] data_parts = line.split(" ");
+
+            String [] lapTimes = data_parts;
+
+            String bestLapTime = lapTimes[1];
+            String [] bestLapTimeParts = lapTimes[1].split(":");
+            Float bestLapTimeInSeconds =
+                            Integer.parseInt(bestLapTimeParts[0]) * 60 +
+                            Integer.parseInt(bestLapTimeParts[1]) +
+                            Float.parseFloat(bestLapTimeParts[2]) / 1000 ;
+
+//            System.out.println(" FIRST BEST TIME = " + bestLapTimeInSeconds);
+
+            for (int i = 2; i < lapTimes.length; i++) {
+                String [] lapTimeParts = lapTimes[i].split(":");
+                Float lapTimeInSeconds =
+                                Integer.parseInt(lapTimeParts[0]) * 60 +
+                                Integer.parseInt(lapTimeParts[1]) +
+                                Float.parseFloat(lapTimeParts[2]) / 1000;
+                if (lapTimeInSeconds < bestLapTimeInSeconds) {
+                    bestLapTime = lapTimes[i];
+                    bestLapTimeInSeconds = lapTimeInSeconds;
+                }
+            }
+            sortedData.add(String.format("%s %s %f", data_parts[0], bestLapTime, bestLapTimeInSeconds));
+        }
+
+        
+        for (int i = 0; i < sortedData.size(); i++) {
+            for (int j = 0; j < sortedData.size() - i - 1; j++) {
+                Float time_this = Float.parseFloat(sortedData.get(j).split(" ")[2]);
+                Float time_next = Float.parseFloat(sortedData.get(j+1).split(" ")[2]);
+                if (time_this > time_next) {
+                    String temp = sortedData.get(j);
+                    sortedData.set(j, sortedData.get(j+1));
+                    sortedData.set(j+1, temp);
+                }
+            }
+        }
+        
+        int i = 1;
+        for (String line : sortedData) {
+            String [] lineParts = line.split(" ");
+            System.out.println(
+                    String.format("%d. %-10s%10s", i++, lineParts[0], lineParts[1]));
+        }
+
+    }
+
+}
