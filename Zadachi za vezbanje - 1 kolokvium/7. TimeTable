@@ -1,0 +1,139 @@
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Scanner;
+
+public class TimesTest {
+
+    public static void main(String[] args) {
+        TimeTable timeTable = new TimeTable();
+        try {
+            timeTable.readTimes(System.in);
+        } catch (UnsupportedFormatException e) {
+            System.out.println("UnsupportedFormatException: " + e.getMessage());
+        } catch (InvalidTimeException e) {
+            System.out.println("InvalidTimeException: " + e.getMessage());
+        }
+        System.out.println("24 HOUR FORMAT");
+        timeTable.writeTimes(System.out, TimeFormat.FORMAT_24);
+        System.out.println("AM/PM FORMAT");
+        timeTable.writeTimes(System.out, TimeFormat.FORMAT_AMPM);
+    }
+
+}
+
+
+enum TimeFormat {
+
+    FORMAT_24, FORMAT_AMPM
+
+}
+
+
+class UnsupportedFormatException extends Exception {
+
+    public UnsupportedFormatException(String cause) {
+        super(cause);
+    }
+
+}
+
+
+class InvalidTimeException extends Exception {
+    public InvalidTimeException(String cause) {
+        super(cause);
+    }
+}
+
+
+class TimeTable {
+
+    private ArrayList<String> times;
+
+    public TimeTable() {
+        times = new ArrayList<>();
+    }
+
+    public void readTimes(InputStream inputStream) throws UnsupportedFormatException, InvalidTimeException {
+        Scanner keyboard = new Scanner(inputStream);
+        while (keyboard.hasNext()) {
+
+            String time = keyboard.next();
+            String [] s_timeParts = time.split("[.]|[:]");
+
+            if (s_timeParts.length == 1)
+                throw new UnsupportedFormatException(time);
+
+            Integer [] i_timeParts = new Integer[] {
+                    Integer.parseInt(s_timeParts[0]),
+                    Integer.parseInt(s_timeParts[1])
+            };
+
+            if (i_timeParts[0] < 0 || i_timeParts[0] > 23
+                    || i_timeParts[1] < 0 || i_timeParts[1] > 59)
+                throw new InvalidTimeException(time);
+
+            times.add(time);
+        }
+    }
+
+    public void writeTimes(OutputStream outputStream, TimeFormat format) {
+        if (format.compareTo(TimeFormat.FORMAT_24) == 0) {
+            sort24();
+            for (String time : times) {
+                String [] timeParts = time.split("[.]|[:]");
+                System.out.printf("%2s:%2s\n", timeParts[0], timeParts[1]);
+            }
+        } else {
+            ArrayList<String> convertedTimes = convertedToSortedAMPM();
+            for (String time : convertedTimes) {
+                System.out.println(time);
+            }
+        }
+    }
+
+    public ArrayList<String> convertedToSortedAMPM() {
+
+        ArrayList<String> convertedTimes = new ArrayList<>();
+        sort24();
+
+        for (String time : times) {
+            String [] timeParts = time.split("[.]|[:]");
+            if (timeParts[0].compareTo("0") == 0) {
+                convertedTimes.add(String.format("12:%s AM", timeParts[1]));
+            } else if (timeParts[0].compareTo("12") < 0) {
+                convertedTimes.add(String.format("%2s:%2s AM", timeParts[0], timeParts[1]));
+            } else if (timeParts[0].compareTo("12") == 0) {
+                convertedTimes.add(String.format("%2s:%2s PM", timeParts[0], timeParts[1]));
+            } else {
+                convertedTimes.add(String.format("%2s:%2s PM",
+                        Integer.parseInt(timeParts[0]) - 12, timeParts[1]));
+            }
+        }
+        return convertedTimes;
+
+    }
+
+    public void sort24() {
+
+        for (int i = 0; i < times.size(); i++) {
+            for (int j = 0; j < times.size() - i - 1; j++) {
+                String [] timeParts_curr = times.get(j).split("[.]|[:]");
+                int currTimeInMins =
+                            Integer.parseInt(timeParts_curr[0]) * 60 +
+                            Integer.parseInt(timeParts_curr[1]);
+                String [] timeParts_next = times.get(j+1).split("[.]|[:]");
+                int nextTimeInMins =
+                            Integer.parseInt(timeParts_next[0]) * 60 +
+                            Integer.parseInt(timeParts_next[1]);
+                if (currTimeInMins > nextTimeInMins) {
+                    String tempTime = times.get(j);
+                    times.set(j, times.get(j+1));
+                    times.set(j+1, tempTime);
+                }
+            }
+        }
+
+    }
+
+}
